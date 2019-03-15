@@ -22,6 +22,32 @@ class GTextureLoader {
     
     }()
         
+    func textureCubeWithImages(_ imageNameArray: [String], device: MTLDevice) -> MTLTexture? {
+        
+        let firstImage = UIImage(named: imageNameArray.first!)!
+        let cubeSize = firstImage.size.width
+        
+        let bytesPerPixel: Int = 4
+        let bytesPerRow: Int = bytesPerPixel * Int(cubeSize)
+        let bytesPerImage: Int = bytesPerRow * Int(cubeSize)
+        
+        
+        let region = MTLRegionMake2D(0, 0, Int(cubeSize), Int(cubeSize))
+        
+        let textureDescriptor = MTLTextureDescriptor.textureCubeDescriptor(pixelFormat: .rgba8Unorm, size: Int(cubeSize), mipmapped: false)
+        
+        let texture = device .makeTexture(descriptor: textureDescriptor)
+        
+        for slice in 0..<6 {
+            let imageName = imageNameArray[slice]
+            let image = UIImage(named: imageName)!
+            
+            let imageData = dataForImage(image)
+            texture?.replace(region: region, mipmapLevel: 0, slice: slice, withBytes: imageData, bytesPerRow: bytesPerRow, bytesPerImage: bytesPerImage)
+        }
+        return texture;
+    }
+
     func texture2DWithImage(named imageName: String, mipmapped: Bool, commandQueue: MTLCommandQueue) -> MTLTexture? {
 
         guard let image = UIImage(named: imageName) else {
