@@ -104,7 +104,7 @@ vertex ColorInOut vertex_reflect(Vertex inVertex [[stage_in]],
                                       constant Uniforms &uniforms [[buffer(BufferIndexUniforms)]])
 {
     float4 modelPosition = float4(inVertex.position, 1);
-    float4 modelNormal = float4(inVertex.normal, 1);
+    float4 modelNormal = float4(inVertex.normal, 0);
     
     float4 worldCameraPosition = uniforms.worldCameraPosition;
     float4 worldPosition = uniforms.modelMatrix * modelPosition;
@@ -123,7 +123,7 @@ vertex ColorInOut vertex_refract(Vertex inVertex             [[stage_in]],
                                       uint vid                    [[vertex_id]])
 {
     float4 modelPosition = float4(inVertex.position, 1);
-    float4 modelNormal = float4(inVertex.normal, 1);
+    float4 modelNormal = float4(inVertex.normal, 0);
     
     float4 worldCameraPosition = uniforms.worldCameraPosition;
     float4 worldPosition = uniforms.modelMatrix * modelPosition;

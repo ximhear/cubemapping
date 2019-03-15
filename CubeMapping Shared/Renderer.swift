@@ -154,8 +154,8 @@ class Renderer: NSObject, MTKViewDelegate {
         
         let library = device.makeDefaultLibrary()
         
-//        let vertexFunction = library?.makeFunction(name: "vertex_reflect")
-        let vertexFunction = library?.makeFunction(name: "vertex_refract")
+        let vertexFunction = library?.makeFunction(name: "vertex_reflect")
+//        let vertexFunction = library?.makeFunction(name: "vertex_refract")
         let fragmentFunction = library?.makeFunction(name: "fragment_cube_lookup")
         
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -212,14 +212,15 @@ class Renderer: NSObject, MTKViewDelegate {
         
         uniformsCenter[0].projectionMatrix = projectionMatrix
         
-        let rotationAxis = float3(1, 1, 0)
+        let rotationAxis = float3(1, 1, 0.3)
+//        rotation = radians_from_degrees(45)
         let modelMatrix = matrix4x4_rotation(radians: rotation, axis: rotationAxis)
         let viewMatrix = matrix4x4_translation(0.0, 0.0, 4.0)
         uniformsCenter[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
         uniformsCenter[0].modelMatrix = modelMatrix
         uniformsCenter[0].normalMatrix = modelMatrix.inverse.transpose
         uniformsCenter[0].worldCameraPosition = float4(0.0, 0.0, -4.0, 1)
-        rotation += 0.01
+        rotation += 0.005
     }
 
     private func updateGameStateEnvironment() {
@@ -356,59 +357,218 @@ class Renderer: NSObject, MTKViewDelegate {
                 
 //                renderEncoder.setFragmentTexture(colorMap, index: TextureIndex.color.rawValue)
 
-                let vertices: [Float] = [
-                    // px
-                    0.5, 0.5, -0.5,          1, 0, 0,
-                    0.5, -0.5, -0.5,         1, 0, 0,
-                    0.5, -0.5, 0.5,          1, 0, 0,
-                    0.5, 0.5, 0.5,           1, 0, 0,
-                    
-                    // nx
-                    -0.5, 0.5, 0.5,          -1, 0, 0,
-                    -0.5, -0.5, 0.5,         -1, 0, 0,
-                    -0.5, -0.5, -0.5,        -1, 0, 0,
-                    -0.5, 0.5, -0.5,         -1, 0, 0,
-                    
-                    // py
-                    -0.5, 0.5, 0.5,          0, 1, 0,
-                    -0.5, 0.5, -0.5,         0, 1, 0,
-                    0.5, 0.5, -0.5,          0, 1, 0,
-                    0.5, 0.5, 0.5,           0, 1, 0,
-                    
-                    // ny
-                    -0.5, -0.5, -0.5,        0, -1, 0,
-                    -0.5, -0.5, 0.5,         0, -1, 0,
-                    0.5, -0.5, 0.5,          0, -1, 0,
-                    0.5, -0.5, -0.5,         0, -1, 0,
-                    
-                    // pz
-                    0.5, 0.5, 0.5,          0, 0, 1,
-                    0.5, -0.5, 0.5,         0, 0, 1,
-                    -0.5, -0.5, 0.5,        0, 0, 1,
-                    -0.5, 0.5, 0.5,         0, 0, 1,
-                    
-                    // nz
-                    -0.5, 0.5, -0.5,          0, 0, -1,
-                    -0.5, -0.5, -0.5,         0, 0, -1,
-                    0.5, -0.5, -0.5,        0, 0, -1,
-                    0.5, 0.5, -0.5,         0, 0, -1,
-                    ]
-                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
-
-                var indices: [UInt16] = []
-                for y in 0..<6 {
-                    let x = UInt16(y)
-                    indices.append(0 + 4 * x)
-                    indices.append(1 + 4 * x)
-                    indices.append(2 + 4 * x)
-                    indices.append(0 + 4 * x)
-                    indices.append(2 + 4 * x)
-                    indices.append(3 + 4 * x)
+                let divideCount = 10
+                var vertices: [Float] = []
+                
+                // px
+                var mesh = divide(startx: -0.5, endx: 0.5, starty: -0.5, endy: 0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (0.5, point.0, point.1, 1, 0, 0)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
                 }
-                
-                let indexCount = indices.count
-                
-                let indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                var indices: [UInt16] = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                var indexCount = indices.count
+                var indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                    indexCount: indexCount ,
+                                                    indexType: .uint16,
+                                                    indexBuffer: indexBuffer!,
+                                                    indexBufferOffset: 0)
+
+                // nx
+                vertices = []
+                mesh = divide(startx: -0.5, endx: 0.5, starty: 0.5, endy: -0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (-0.5, point.0, point.1, -1, 0, 0)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
+                }
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                indices = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                indexCount = indices.count
+                indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                    indexCount: indexCount ,
+                                                    indexType: .uint16,
+                                                    indexBuffer: indexBuffer!,
+                                                    indexBufferOffset: 0)
+
+                // py
+                vertices = []
+                mesh = divide(startx: -0.5, endx: 0.5, starty: -0.5, endy: 0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (point.1, 0.5, point.0, 0, 1, 0)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
+                }
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                indices = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                indexCount = indices.count
+                indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                    indexCount: indexCount ,
+                                                    indexType: .uint16,
+                                                    indexBuffer: indexBuffer!,
+                                                    indexBufferOffset: 0)
+
+                // ny
+                vertices = []
+                mesh = divide(startx: -0.5, endx: 0.5, starty: 0.5, endy: -0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (point.1, -0.5, point.0, 0, -1, 0)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
+                }
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                indices = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                indexCount = indices.count
+                indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                    indexCount: indexCount ,
+                                                    indexType: .uint16,
+                                                    indexBuffer: indexBuffer!,
+                                                    indexBufferOffset: 0)
+
+                // pz
+                vertices = []
+                mesh = divide(startx: 0.5, endx: -0.5, starty: -0.5, endy: 0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (point.1, point.0, 0.5, 0, 0, 1)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
+                }
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                indices = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                indexCount = indices.count
+                indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
+                renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                    indexCount: indexCount ,
+                                                    indexType: .uint16,
+                                                    indexBuffer: indexBuffer!,
+                                                    indexBufferOffset: 0)
+
+                // nz
+                vertices = []
+                mesh = divide(startx: -0.5, endx: 0.5, starty: 0.5, endy: -0.5, count: divideCount)
+                for points in mesh {
+                    let pts = points.map { (point) -> (Float, Float, Float, Float, Float, Float) in
+                        return (point.0, point.1, -0.5, 0, 0, -1)
+                    }
+                    for pt in pts {
+                        vertices.append(pt.0)
+                        vertices.append(pt.1)
+                        vertices.append(pt.2)
+                        vertices.append(pt.3)
+                        vertices.append(pt.4)
+                        vertices.append(pt.5)
+                    }
+                }
+                renderEncoder.setVertexBytes(vertices, length: MemoryLayout<Float>.stride * vertices.count, index: 0)
+                indices = []
+                for y in 0..<divideCount {
+                    for x in 0..<divideCount {
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 0))
+                        indices.append(UInt16((y + 1) * (divideCount + 1) + x + 1))
+                        indices.append(UInt16((y + 0) * (divideCount + 1) + x + 1))
+                    }
+                }
+                indexCount = indices.count
+                indexBuffer = device.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indexCount, options: .storageModeShared)
                 renderEncoder.drawIndexedPrimitives(type: .triangle,
                                                     indexCount: indexCount ,
                                                     indexType: .uint16,
@@ -426,6 +586,24 @@ class Renderer: NSObject, MTKViewDelegate {
             
             commandBuffer.commit()
         }
+    }
+    
+    func divide(startx: Float, endx: Float, starty: Float, endy: Float, count: Int) -> [[(Float, Float)]] {
+        
+        let offsetx = (endx - startx) / Float(count)
+        let offsety = (endy - starty) / Float(count)
+        
+        var result = [[(Float, Float)]]()
+        
+        for y in 0..<(count + 1) {
+            var xs = [(Float, Float)]()
+            for x in 0..<(count + 1) {
+                xs.append((startx + offsetx * Float(x), starty + offsety * Float(y)))
+            }
+            result.append(xs)
+        }
+
+        return result
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
