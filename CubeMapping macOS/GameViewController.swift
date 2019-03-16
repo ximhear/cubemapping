@@ -42,4 +42,8 @@ class GameViewController: NSViewController {
 
         mtkView.delegate = renderer
     }
+    
+    override func mouseUp(with event: NSEvent) {
+        renderer.useReflect = !renderer.useReflect
+    }
 }

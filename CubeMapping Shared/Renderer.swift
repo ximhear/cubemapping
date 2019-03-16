@@ -32,7 +32,8 @@ class Renderer: NSObject, MTKViewDelegate {
     var dynamicCubeUniformBuffer: MTLBuffer
     var dynamicPerInstanceUniformBuffer: MTLBuffer
     
-    var pipelineState: MTLRenderPipelineState
+    var reflectPipelineState: MTLRenderPipelineState
+    var refractPipelineState: MTLRenderPipelineState
     var environmentPipelineState: MTLRenderPipelineState
     var depthState: MTLDepthStencilState
     
@@ -63,6 +64,8 @@ class Renderer: NSObject, MTKViewDelegate {
     var indexCount: Int = 0
     var vertexBuffer: MTLBuffer!
     var indexBuffer: MTLBuffer!
+    
+    var useReflect: Bool = true
 
     init?(metalKitView: MTKView) {
         self.device = metalKitView.device!
@@ -97,7 +100,16 @@ class Renderer: NSObject, MTKViewDelegate {
         let mtlVertexDescriptor = Renderer.buildMetalVertexDescriptor()
         
         do {
-            pipelineState = try Renderer.buildRenderPipelineWithDevice(device: device,
+            reflectPipelineState = try Renderer.buildReflectPipelineWithDevice(device: device,
+                                                                       metalKitView: metalKitView,
+                                                                       mtlVertexDescriptor: mtlVertexDescriptor)
+        } catch {
+            print("Unable to compile render pipeline state.  Error info: \(error)")
+            return nil
+        }
+        
+        do {
+            refractPipelineState = try Renderer.buildRefractPipelineWithDevice(device: device,
                                                                        metalKitView: metalKitView,
                                                                        mtlVertexDescriptor: mtlVertexDescriptor)
         } catch {
@@ -200,7 +212,7 @@ class Renderer: NSObject, MTKViewDelegate {
         return mtlVertexDescriptor
     }
     
-    class func buildRenderPipelineWithDevice(device: MTLDevice,
+    class func buildReflectPipelineWithDevice(device: MTLDevice,
                                              metalKitView: MTKView,
                                              mtlVertexDescriptor: MTLVertexDescriptor) throws -> MTLRenderPipelineState {
         /// Build a render state pipeline object
@@ -208,7 +220,30 @@ class Renderer: NSObject, MTKViewDelegate {
         let library = device.makeDefaultLibrary()
         
         let vertexFunction = library?.makeFunction(name: "vertex_reflect")
-//        let vertexFunction = library?.makeFunction(name: "vertex_refract")
+        let fragmentFunction = library?.makeFunction(name: "fragment_cube_lookup")
+        
+        let pipelineDescriptor = MTLRenderPipelineDescriptor()
+        pipelineDescriptor.label = "RenderPipeline"
+        pipelineDescriptor.sampleCount = metalKitView.sampleCount
+        pipelineDescriptor.vertexFunction = vertexFunction
+        pipelineDescriptor.fragmentFunction = fragmentFunction
+        pipelineDescriptor.vertexDescriptor = mtlVertexDescriptor
+        
+        pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+        pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+        pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+        
+        return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+    }
+    
+    class func buildRefractPipelineWithDevice(device: MTLDevice,
+                                             metalKitView: MTKView,
+                                             mtlVertexDescriptor: MTLVertexDescriptor) throws -> MTLRenderPipelineState {
+        /// Build a render state pipeline object
+        
+        let library = device.makeDefaultLibrary()
+        
+        let vertexFunction = library?.makeFunction(name: "vertex_refract")
         let fragmentFunction = library?.makeFunction(name: "fragment_cube_lookup")
         
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -429,7 +464,12 @@ class Renderer: NSObject, MTKViewDelegate {
 
                 self.updateGameStateCenter()
 
-                renderEncoder.setRenderPipelineState(pipelineState)
+                if useReflect == true {
+                    renderEncoder.setRenderPipelineState(reflectPipelineState)
+                }
+                else {
+                    renderEncoder.setRenderPipelineState(refractPipelineState)
+                }
                 
                 renderEncoder.setVertexBuffer(dynamicCubeUniformBuffer, offset:cubeUniformBufferOffset, index: BufferIndex.uniforms.rawValue)
                 renderEncoder.setVertexBuffer(dynamicPerInstanceUniformBuffer, offset:perInstanceUniformBufferOffset, index: BufferIndex.perInstanceUniforms.rawValue)

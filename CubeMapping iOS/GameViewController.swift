@@ -42,5 +42,13 @@ class GameViewController: UIViewController {
         renderer.mtkView(mtkView, drawableSizeWillChange: mtkView.drawableSize)
 
         mtkView.delegate = renderer
+        
+        let g = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
+        self.view.addGestureRecognizer(g)
+        
+    }
+    
+    @objc func tap(_ sender: Any) {
+        renderer.useReflect = !renderer.useReflect
     }
 }
