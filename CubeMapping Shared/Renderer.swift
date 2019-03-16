@@ -15,7 +15,7 @@ import simd
 // The 256 byte aligned size of our uniform structure
 let alignedEnvironmentUniformsSize = (MemoryLayout<EnvironmentUniforms>.size & ~0xFF) + 0x100
 let alignedCubeUniformsSize = (MemoryLayout<CubeUniforms>.size & ~0xFF) + 0x100
-let alignedPerInstanceUniformsSize = (MemoryLayout<PerInstanceUniforms>.size & ~0xFF) + 0x100
+let alignedPerInstanceUniformsSize = ((MemoryLayout<PerInstanceUniforms>.size * 6) & ~0xFF) + 0x100
 
 let maxBuffersInFlight = 3
 
@@ -281,6 +281,8 @@ class Renderer: NSObject, MTKViewDelegate {
         cubeUniforms[0].modelMatrix = modelMatrix
         cubeUniforms[0].worldCameraPosition = float4(0.0, 0.0, -4.0, 1)
         
+//        perInstanceUniforms[0].modelMatrix = simd_mul(modelMatrix, matrix4x4_rotation(radians: radians_from_degrees(90), axis: float3(0, 1, 0)))
+//        perInstanceUniforms[0].normalMatrix = perInstanceUniforms[0].modelMatrix.inverse.transpose
         for x in 0..<6 {
             if x == 0 { // px
                 perInstanceUniforms[x].modelMatrix = modelMatrix

@@ -125,7 +125,7 @@ vertex ColorInOut vertex_refract(Vertex inVertex             [[stage_in]],
     float4 modelNormal = float4(inVertex.normal, 0);
     
     float4 worldCameraPosition = uniforms.worldCameraPosition;
-    float4 worldPosition = uniforms.modelMatrix * modelPosition;
+    float4 worldPosition = perInstanceUniforms[iid].modelMatrix * modelPosition;
     float4 worldNormal = normalize(perInstanceUniforms[iid].normalMatrix * modelNormal);
     float4 worldEyeDirection = normalize(worldPosition - worldCameraPosition);
     
