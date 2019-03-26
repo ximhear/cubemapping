@@ -437,7 +437,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = WD3LPJ2STX;
+				DEVELOPMENT_TEAM = J8647L48BZ;
 				INFOPLIST_FILE = "CubeMapping iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -448,7 +448,7 @@
 				PRODUCT_NAME = CubeMapping;
 				SDKROOT = iphoneos;
 				SWIFT_OBJC_BRIDGING_HEADER = "CubeMapping Shared/ShaderTypes.h";
-				SWIFT_VERSION = 4.2;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -459,7 +459,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = WD3LPJ2STX;
+				DEVELOPMENT_TEAM = J8647L48BZ;
 				INFOPLIST_FILE = "CubeMapping iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -470,7 +470,7 @@
 				PRODUCT_NAME = CubeMapping;
 				SDKROOT = iphoneos;
 				SWIFT_OBJC_BRIDGING_HEADER = "CubeMapping Shared/ShaderTypes.h";
-				SWIFT_VERSION = 4.2;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
